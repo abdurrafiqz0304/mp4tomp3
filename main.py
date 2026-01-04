@@ -5,11 +5,18 @@ import subprocess
 import shutil
 import sys
 
-# --- HELPER FUNCTIONS ---
-def get_base_dir():
-    """Dapatkan lokasi folder di mana script ini berada (mp4tomp3-main)."""
-    return os.path.dirname(os.path.abspath(__file__))
+# --- CONFIGURATION ---
+# Dapatkan lokasi sebenar folder projek ini
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# Cipta "Bunker" khas untuk download supaya tak bersepah
+SAFE_ZONE = os.path.join(BASE_DIR, 'MP3_Downloads')
+
+# Pastikan bunker ni wujud
+if not os.path.exists(SAFE_ZONE):
+    os.makedirs(SAFE_ZONE)
+
+# --- HELPER FUNCTIONS ---
 def open_folder_window(path):
     try:
         if platform.system() == "Windows": os.startfile(path)
@@ -18,37 +25,42 @@ def open_folder_window(path):
     except Exception as e: print(f"❌ Error: {e}")
 
 def get_ffmpeg_path():
-    return os.path.join(get_base_dir(), 'ffmpeg.exe')
+    return os.path.join(BASE_DIR, 'ffmpeg.exe')
 
-# --- UPDATE MENU ---
+# --- UPDATE MENU (FIXED LOCATION) ---
 def update_menu():
     while True:
         print("\n" + "="*40)
         print("      SYSTEM UPDATE CENTER")
         print("="*40)
-        print("1. Update PROGRAM (Fix bugs/Features)")
-        print("2. Update LIBRARY (yt-dlp fix)")
+        print("1. Update PROGRAM (Fix bugs/Path issue)")
+        print("2. Update LIBRARY (yt-dlp)")
         print("0. < BACK")
         
         choice = input("\nSelect Option (0-2): ").strip()
         if choice == '0': return
 
         if choice == '1':
-            print("\n[INFO] Updating Program... (App will restart)")
+            print("\n[INFO] Updating Program...")
+            print(f"[TARGET] {BASE_DIR}") # Tunjuk user kita update kat mana
+            
+            # --- THE FIX IS HERE ---
+            # Kita tambah 'cd /d {BASE_DIR}' supaya dia masuk folder betul dulu
             update_cmd = (
-                'start "MP3 Turbo Updater" cmd /c '
-                '"timeout /t 3 >nul && echo [INFO] Downloading... '
-                '&& curl -k -L -o update.zip https://github.com/abdurrafiqz0304/mp4tomp3/archive/refs/heads/main.zip '
-                '&& echo [INFO] Extracting... && tar -xf update.zip '
-                '&& echo [INFO] Overwriting... && xcopy mp4tomp3-main\\* . /E /Y /Q '
-                '&& rmdir /s /q mp4tomp3-main && del update.zip '
-                '&& echo [SUCCESS] Restarting... && install.bat"'
+                f'start "MP3 Turbo Updater" cmd /c '
+                f'"cd /d "{BASE_DIR}" ' 
+                f'&& timeout /t 3 >nul && echo [Downloading]... '
+                f'&& curl -k -L -o update.zip https://github.com/abdurrafiqz0304/mp4tomp3/archive/refs/heads/main.zip '
+                f'&& echo [Extracting]... && tar -xf update.zip '
+                f'&& echo [Updating]... && xcopy mp4tomp3-main\\* . /E /Y /Q '
+                f'&& rmdir /s /q mp4tomp3-main && del update.zip '
+                f'&& echo [Done] Restarting... && install.bat"'
             )
             os.system(update_cmd)
             sys.exit()
 
         if choice == '2':
-            print("\n[INFO] Updating yt-dlp library...")
+            print("\n[INFO] Updating yt-dlp...")
             try:
                 subprocess.check_call([sys.executable, "-m", "pip", "install", "-U", "yt-dlp"])
                 print("\n✅ Library updated!")
@@ -61,12 +73,9 @@ def update_menu():
 # --- FILE MANAGER ---
 def delete_files_bulk(path):
     while True:
-        try:
-            files = [f for f in os.listdir(path) if f.endswith('.mp3')]
-        except FileNotFoundError:
-            print("❌ Folder not found.")
-            return
-
+        try: files = [f for f in os.listdir(path) if f.endswith('.mp3')]
+        except: return
+        
         if not files:
             print(f"\n⚠️ No MP3 files in this folder.")
             return
@@ -82,8 +91,7 @@ def delete_files_bulk(path):
             to_delete = [files[n-1] for n in indices if 0 <= n-1 < len(files)]
             if not to_delete: continue
             
-            print(f"Deleting {len(to_delete)} files...")
-            if input("Confirm? (y/n): ").lower() == 'y':
+            if input(f"Delete {len(to_delete)} files? (y/n): ").lower() == 'y':
                 for f in to_delete:
                     os.remove(os.path.join(path, f))
                     print(f"Deleted: {f}")
@@ -91,8 +99,8 @@ def delete_files_bulk(path):
 
 def delete_entire_folder(path):
     folder_name = os.path.basename(path)
-    if folder_name == 'downloads':
-        print("\n❌ Cannot delete default 'downloads' folder.")
+    if folder_name.lower() == 'mp3_downloads':
+        print("\n❌ Cannot delete the main Root folder.")
         return False
     
     if input(f"\n⚠️ DELETE FOLDER '{folder_name}'? Type 'DELETE': ") == 'DELETE':
@@ -100,18 +108,15 @@ def delete_entire_folder(path):
             shutil.rmtree(path)
             print("✅ Folder deleted.")
             return True
-        except Exception as e:
-            print(f"❌ Error deleting folder: {e}")
+        except Exception as e: print(f"❌ Error: {e}")
     return False
 
 # --- DOWNLOADER ---
 def download_audio(sources, quality_choice, download_mode, target_folder):
-    # Pastikan target_folder wujud
     if not os.path.exists(target_folder): os.makedirs(target_folder)
-    
     kbps = '320' if quality_choice == '1' else '128'
-    ffmpeg_loc = get_ffmpeg_path()
     
+    ffmpeg_loc = get_ffmpeg_path()
     if not os.path.exists(ffmpeg_loc):
         print(f"\n❌ FFmpeg missing at {ffmpeg_loc}. Run install.bat.")
         return
@@ -132,36 +137,32 @@ def download_audio(sources, quality_choice, download_mode, target_folder):
             try: ydl.download([url.strip()])
             except Exception as e: print(f"\n❌ FAILED: {e}")
 
-# --- FOLDER MENU (KAU MINTA TU) ---
+# --- ISOLATED FOLDER MENU ---
 def folder_menu():
-    # Ini kunci utama: Kita ambil path folder program ni
-    base_dir = get_base_dir()
-    
     while True:
         print(f"\n--- FOLDER SELECTION ---")
-        print(f"[Location: {base_dir}]") # Tunjuk user kita cari kat mana
-        print("1. Use default 'downloads' folder")
-        print("2. Create a NEW folder")
-        print("3. Select EXISTING folder (from this project)")
+        print(f"[Root: .../{os.path.basename(SAFE_ZONE)}/]") 
+        print("1. Default Folder (Main)")
+        print("2. Create New Sub-Folder")
+        print("3. Select Existing Sub-Folder")
         print("0. < BACK")
         
         choice = input("Option: ").strip()
         if choice == '0': return None
         
         if choice == '1': 
-            return os.path.join(base_dir, 'downloads')
+            return SAFE_ZONE
         
         if choice == '2': 
-            name = input("Enter new folder name: ").strip()
-            return os.path.join(base_dir, name if name else 'downloads')
+            name = input("Enter sub-folder name: ").strip()
+            return os.path.join(SAFE_ZONE, name if name else 'General')
         
         if choice == '3':
-            # List folder hanya dalam base_dir
-            all_items = os.listdir(base_dir)
-            folders = [f for f in all_items if os.path.isdir(os.path.join(base_dir, f)) and not f.startswith('.')]
+            all_items = os.listdir(SAFE_ZONE)
+            folders = [f for f in all_items if os.path.isdir(os.path.join(SAFE_ZONE, f))]
             
             if not folders:
-                print("⚠️ No folders found in project directory.")
+                print("⚠️ No sub-folders found inside MP3_Downloads.")
                 continue
 
             for i, f in enumerate(folders, 1): print(f"{i}. {f}")
@@ -169,14 +170,13 @@ def folder_menu():
             try: 
                 idx = int(input("Select number: ")) - 1
                 if 0 <= idx < len(folders):
-                    # Return Full Path supaya tak sesat
-                    return os.path.join(base_dir, folders[idx])
+                    return os.path.join(SAFE_ZONE, folders[idx])
             except: pass
 
 def main_menu():
     while True:
         print("\n" + "="*40)
-        print("   MP3 TURBO V2.5 (FIXED PATH)   ")
+        print("   MP3 TURBO V2.7 (PATH FIXED)   ")
         print("="*40)
         print("1. Single Video")
         print("2. Playlist")
@@ -190,6 +190,7 @@ def main_menu():
         if mode == '5': update_menu(); continue
 
         if mode == '4': 
+            print(f"\n[Scanning: {SAFE_ZONE}]")
             f = folder_menu()
             if f:
                 while os.path.exists(f):
