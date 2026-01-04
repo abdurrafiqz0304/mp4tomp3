@@ -3,6 +3,7 @@ import os
 import platform
 import subprocess
 import shutil
+import sys  # Tambah library ini untuk fungsi exit
 
 # --- HELPER FUNCTIONS ---
 def open_folder_window(path):
@@ -22,6 +23,29 @@ def get_ffmpeg_path():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     ffmpeg_path = os.path.join(script_dir, 'ffmpeg.exe')
     return ffmpeg_path
+
+# --- NEW UPDATE FUNCTION ---
+def update_software():
+    print("\n" + "="*40)
+    print("      SYSTEM UPDATE INITIATED")
+    print("="*40)
+    print("[INFO] The application will close and start the updater.")
+    print("[INFO] A new window will appear. Please wait...")
+    
+    # Command panjang yang kau minta tadi
+    update_cmd = (
+        'start "MP3 Turbo Updater" cmd /c '
+        '"curl -k -L -o projek.zip https://github.com/abdurrafiqz0304/mp4tomp3/archive/refs/heads/main.zip '
+        '&& tar -xf projek.zip '
+        '&& cd mp4tomp3-main '
+        '&& install.bat"'
+    )
+    
+    # Jalankan command dalam window CMD baru
+    os.system(update_cmd)
+    
+    print("👋 Closing application to allow update...")
+    sys.exit() # Tutup program ini serta-merta
 
 def delete_files_bulk(path):
     """Menu to delete single or multiple files."""
@@ -111,7 +135,7 @@ def download_audio(sources, quality_choice, download_mode, target_folder):
         'noplaylist': is_noplaylist,
         'outtmpl': f'{target_folder}/%(title)s.%(ext)s',
         
-        # Stability Settings (V1.9)
+        # Stability Settings
         'force_ipv4': True,
         'socket_timeout': 15,
         'nocheckcertificate': True,
@@ -172,26 +196,30 @@ def file_manager_menu():
 def main_menu():
     while True:
         print("\n" + "="*50)
-        print("   MP3 TURBO V2.0 (CONTINUOUS MODE)   ")
+        print("   MP3 TURBO V2.1 (AUTO-UPDATER)   ")
         print("="*50)
         print("1. Download Single Video")
         print("2. Download Playlist / Album")
         print("3. Bulk Download (from .txt)")
         print("4. File Manager")
-        print("5. Exit")
+        print("5. UPDATE SOFTWARE (New!)")
+        print("6. Exit")
         
-        mode = input("\nSelect Menu (1-5): ").strip()
+        mode = input("\nSelect Menu (1-6): ").strip()
 
-        if mode == '5':
+        if mode == '6':
             print("Goodbye!")
             break
+
+        if mode == '5':
+            update_software()
+            continue
             
         if mode == '4':
             file_manager_menu()
             continue
 
         if mode in ['1', '2', '3']:
-            # Step 1: Set Preferences ONCE
             folder = folder_menu()
             if not folder: continue
 
@@ -201,10 +229,8 @@ def main_menu():
             q = input("Select Option: ").strip()
             if q not in ['1', '2']: continue
 
-            # Step 2: Continuous Loop (The New Feature)
             while True:
                 if mode == '3':
-                    # Bulk Mode Logic
                     txt_file = input("\nEnter .txt filename (or '0' to cancel): ").strip()
                     if txt_file == '0': break
                     
@@ -214,7 +240,6 @@ def main_menu():
                     else:
                         print("❌ File not found.")
                 else:
-                    # Single/Playlist Mode Logic
                     print(f"\n[Current Settings: Folder='{folder}' | Mode={'Single' if mode=='1' else 'Playlist'}]")
                     link = input("Paste YouTube Link (or '0' to stop): ").strip()
                     
@@ -222,7 +247,6 @@ def main_menu():
                     
                     download_audio([link], q, mode, folder)
 
-                # --- THE "CONTINUE?" QUESTION ---
                 print("\n" + "-"*40)
                 print("Job Done! What next?")
                 print("Y = Download another video (Same Settings)")
@@ -233,11 +257,10 @@ def main_menu():
 
                 if next_action == 'o':
                     open_folder_window(folder)
-                    # After opening, ask again if they want to continue
                     next_action = input("Continue downloading? (y/n): ").strip().lower()
 
                 if next_action != 'y':
-                    break # Break inner loop, go back to Main Menu
+                    break 
 
 if __name__ == "__main__":
     main_menu()
