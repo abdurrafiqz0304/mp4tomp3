@@ -1,6 +1,6 @@
 ## 🚀 Quick Start (No Manual Setup)
 
-You can run this tool directly from your Command Prompt (CMD) just by typing `mp3`.
+You can run this tool directly from your Command Prompt (CMD) just by typing `mp3`, goodluck!.
 
 ### Installation Steps
 
