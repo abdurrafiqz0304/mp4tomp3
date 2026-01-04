@@ -27,6 +27,7 @@ pkg update -y && pkg upgrade -y && pkg install python ffmpeg -y && pip install y
 ### How to launch
 1. Open CMD
 2. type "mp3"
+3. (termux): python mp3.py
 
 ### How To Use requirements.txt?
 Customly put link in the txt
