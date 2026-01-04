@@ -1,5 +1,5 @@
 @echo off
-title MP3 Turbo Downloader - ULTIMATE AUTO SETUP
+title MP3 Turbo Downloader - SUPER FAST SETUP
 echo ==================================================
 echo      MP3 TURBO DOWNLOADER - AUTO SETUP
 echo ==================================================
@@ -7,7 +7,6 @@ echo.
 
 :: --- STEP 1: CHECK PYTHON ---
 echo [1/4] Checking Python installation...
-:: Cuba panggil python. Kalau error, maksudnya tak ada.
 python --version >nul 2>&1
 if %errorlevel% equ 0 (
     echo [OK] Python is found.
@@ -15,9 +14,8 @@ if %errorlevel% equ 0 (
 )
 
 :: --- PYTHON NOT FOUND: AUTO INSTALLER ---
-echo [ALERT] Python is NOT installed on this computer.
+echo [ALERT] Python is NOT installed.
 echo.
-echo We need to install Python to run this tool.
 set /p ask_py=">>> Install Python automatically? (y/n): "
 
 if /i "%ask_py%" neq "y" (
@@ -27,39 +25,32 @@ if /i "%ask_py%" neq "y" (
 )
 
 echo.
-echo [INFO] Downloading Python Installer...
+echo [INFO] Downloading Python...
 powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.12.1/python-3.12.1-amd64.exe' -OutFile 'python_setup.exe'"
 
-echo [INFO] Installing Python... (Please wait...)
-:: Install senyap-senyap & paksa masuk PATH
+echo [INFO] Installing Python (Silent Mode)...
 start /wait python_setup.exe /quiet InstallAllUsers=1 PrependPath=1 Include_pip=1
-
-:: Buang fail installer
 del python_setup.exe
 
 echo.
 echo [SUCCESS] Python installed! Restarting installer...
 timeout /t 2 >nul
-
-:: --- MAGIC PART 1: AUTO RESTART ---
-:: Start balik script ini dalam window baru
 start "" "%~f0"
-:: Tutup window lama ni
 exit
 
 :install_libs
 :: --- STEP 2: INSTALL LIBRARIES ---
 echo.
-echo [2/4] Installing required libraries...
+echo [2/4] Installing libraries...
 python -m pip install -r requirements.txt
 if %errorlevel% neq 0 (
-    echo [ERROR] Failed to install libraries. Check internet connection.
+    echo [ERROR] Failed. Check internet.
     pause
     exit /b
 )
 echo [OK] Libraries installed.
 
-:: --- STEP 3: FFMPEG CHECK ---
+:: --- STEP 3: FFMPEG CHECK (TURBO MODE) ---
 echo.
 echo [3/4] Checking for FFmpeg...
 if exist "ffmpeg.exe" (
@@ -68,13 +59,17 @@ if exist "ffmpeg.exe" (
     echo [INFO] Downloading FFmpeg...
     powershell -Command "Invoke-WebRequest -Uri 'https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip' -OutFile 'ffmpeg.zip'"
     
-    echo [INFO] Extracting...
-    powershell -Command "Expand-Archive -Path 'ffmpeg.zip' -DestinationPath 'ffmpeg_temp'"
+    echo [INFO] Extracting... (Using High-Speed TAR)
+    :: GUNA TAR - LAJU GILA BANDING POWERSHELL
+    tar -xf ffmpeg.zip
     
     echo [INFO] Configuring...
-    move "ffmpeg_temp\ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe" "%~dp0" >nul
+    :: Pindahkan fail dari folder yang diextract
+    move "ffmpeg-master-latest-win64-gpl\bin\ffmpeg.exe" "%~dp0" >nul
+    
+    :: Cuci sampah
     del "ffmpeg.zip"
-    rmdir /s /q "ffmpeg_temp"
+    rmdir /s /q "ffmpeg-master-latest-win64-gpl"
     
     if exist "ffmpeg.exe" (
         echo [OK] FFmpeg installed!
@@ -103,9 +98,5 @@ echo    SETUP COMPLETE! LAUNCHING APP...
 echo ==================================================
 timeout /t 3 >nul
 
-:: --- MAGIC PART 2: AUTO LAUNCH ---
-:: Buka CMD baru yang environment dia dah refresh, dan terus run 'mp3'
 start "MP3 Turbo Downloader" cmd /k "echo Welcome! & mp3"
-
-:: Tutup installer ni
 exit
