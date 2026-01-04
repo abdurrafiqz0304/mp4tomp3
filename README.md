@@ -1,3 +1,5 @@
+### The Set Up may take several minutes to complete
+
 ## 🚀 Quick Start (No Manual Setup)
 ## 📦 Installation (Automatic)
 
