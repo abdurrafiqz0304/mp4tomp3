@@ -1,0 +1,15 @@
+# Ignore the big FFmpeg file (User downloads this via install.bat)
+ffmpeg.exe
+ffmpeg.zip
+ffmpeg_temp/
+
+# Ignore the downloads folder (We don't want to upload mp3s to GitHub)
+downloads/
+
+# Ignore Python cache files (Junk files)
+__pycache__/
+*.pyc
+
+# Ignore system files
+.DS_Store
+Thumbs.db
