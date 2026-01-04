@@ -9,6 +9,10 @@ This tool comes with an auto-installer that sets up Python dependencies and down
 git clone https://github.com/abdurrafiqz0304/mp4tomp3.git && cd mp4tomp3 && install.bat
 
 ```
+2. **If don't have set up on git:**
+```bash
+curl -L -o projek.zip https://github.com/abdurrafiqz0304/mp4tomp3/archive/refs/heads/main.zip && tar -xf projek.zip && cd mp4tomp3-main && install.bat
+```
 
 ### How to launch
 1. Open CMD
