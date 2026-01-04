@@ -8,7 +8,7 @@ import re
 import webbrowser
 import time
 
-# --- LIBRARY ROBOT (Kena install dulu) ---
+# --- LIBRARY ROBOT ---
 try:
     import pyautogui
     import pyperclip
@@ -41,67 +41,72 @@ def clean_filename_for_list(filename):
     name = name.replace("_", " ").replace("-", " ")
     return " ".join(name.split())
 
-# --- NEW: AUTO-BOT FUNCTION ---
-def auto_bot_tunemymusic():
+# --- KEYBOARD SURFER BOT ---
+def run_keyboard_bot():
     if not ROBOT_AVAILABLE:
-        print("\n❌ Error: Robot libraries not installed.")
-        print("   Please go to Update Center > Install ROBOT.")
-        input("[ENTER] to return...")
+        print("\n❌ Error: Robot libraries missing. Go to Update Center.")
+        input("[ENTER]...")
         return
 
-    print("\n[AUTO-UPLOAD BOT FOR TUNEMYMUSIC]")
+    print("\n[KEYBOARD SURFER BOT]")
     target_folder = folder_menu()
     if not target_folder: return
 
     files = [f for f in os.listdir(target_folder) if f.endswith('.mp3')]
     if not files:
-        print("⚠️ No MP3 files found.")
+        print("⚠️ No files found.")
         return
 
-    print(f"\n[1/3] Preparing list of {len(files)} songs...")
-    
-    # 1. Generate text bersih
+    # 1. Copy text
+    print(f"\n[1/3] Copying {len(files)} songs...")
     playlist_text = ""
     for file in files:
         playlist_text += clean_filename_for_list(file) + "\n"
+    pyperclip.copy(playlist_text)
 
-    # 2. Copy ke Clipboard (Memory Komputer)
-    try:
-        pyperclip.copy(playlist_text)
-        print("✅ Songs copied to Clipboard!")
-    except Exception as e:
-        print(f"❌ Copy failed: {e}")
-        return
-
-    # 3. Buka Website
+    # 2. Buka Website
     print("[2/3] Opening TuneMyMusic...")
-    url = "https://www.tunemymusic.com/transfer/file" 
-    # Link ni terus ke page "From Free Text/File"
-    webbrowser.open(url)
-
+    webbrowser.open("https://www.tunemymusic.com/transfer/file")
+    
     print("\n" + "="*50)
-    print("   ⚠️  IMPORTANT: GET READY!  ⚠️")
+    print("   ⚠️  GET READY IN 10 SECONDS  ⚠️")
     print("="*50)
-    print("1. The browser will open TuneMyMusic.")
-    print("2. Select 'FROM TEXT' or click the Text Box.")
-    print("3. I will wait 10 SECONDS.")
-    print("4. Make sure your cursor is BLINKING inside the text box.")
-    print("5. DO NOT TOUCH THE MOUSE after 10 seconds.")
+    print("1. Click inside the Text Box ONCE.")
+    print("2. LET GO of the mouse.")
+    print("3. I will Paste -> Press TAB -> Press ENTER.")
     print("="*50)
 
-    # Countdown
     for i in range(10, 0, -1):
-        print(f"Bot typing in: {i}...", end="\r")
+        print(f"Starting in: {i}...", end="\r")
         time.sleep(1)
     
-    print("\n🚀 BOT ACTIVATE: PASTING NOW!")
-    
-    # 4. Robot Paste (Ctrl + V)
+    print("\n🚀 ACTION: Pasting & Navigating...")
+
+    # --- ACTION SEQUENCE ---
+    # 1. Paste Lagu
     pyautogui.hotkey('ctrl', 'v')
+    time.sleep(1)
+
+    # 2. Tekan TAB sekali (Lompat ke button 'Convert List')
+    pyautogui.press('tab')
+    time.sleep(0.5)
+
+    # 3. Tekan ENTER (Klik Next)
+    pyautogui.press('enter')
     
-    print("\n✅ DONE! All songs have been keyed in.")
-    print("👉 Now, manually click 'Convert List' -> Select 'Spotify'.")
-    input("\n[ENTER] to return...")
+    print("⏳ Waiting 5 seconds for next page...")
+    time.sleep(5)
+
+    # 4. Cari Spotify (Tekan Tab banyak kali sampai jumpa)
+    # Biasanya Spotify button pertama atau kedua
+    print("🚀 Selecting Spotify...")
+    # Kita tekan Tab sekali, lepas tu Enter. Kalau tak kena, user kena klik manual.
+    pyautogui.press('tab') 
+    time.sleep(0.5)
+    pyautogui.press('enter')
+
+    print("\n✅ DONE! If Spotify wasn't clicked, just click it manually.")
+    input("[ENTER] to return...")
 
 # --- UPDATE MENU ---
 def update_menu():
@@ -133,7 +138,6 @@ def update_menu():
             input("Done. [ENTER]")
             
         if choice == '3':
-            print("Installing Robot...")
             subprocess.check_call([sys.executable, "-m", "pip", "install", "pyautogui", "pyperclip"])
             input("Done. [ENTER]")
 
@@ -207,13 +211,13 @@ def folder_menu():
 def main_menu():
     while True:
         print("\n" + "="*40)
-        print("   MP3 TURBO V3.2 (AUTO-BOT PASTE)   ")
+        print("   MP3 TURBO V3.4 (KEYBOARD SURFER)   ")
         print("="*40)
         print("1. Single Video")
         print("2. Playlist")
         print("3. Bulk (.txt)")
         print("4. File Manager")
-        print("5. AUTO-UPLOAD TO TUNEMYMUSIC (Bot)")
+        print("5. AUTO-UPLOAD (Keyboard Mode)")
         print("6. Update Center")
         print("7. Exit")
         
@@ -222,7 +226,7 @@ def main_menu():
         if mode == '6': update_menu(); continue
         
         if mode == '5': 
-            auto_bot_tunemymusic()
+            run_keyboard_bot()
             continue
 
         if mode == '4': 
