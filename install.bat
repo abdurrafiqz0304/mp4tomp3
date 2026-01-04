@@ -79,3 +79,5 @@ echo You can now open any Command Prompt and type:
 echo    mp3
 echo.
 pause
+
+:: Done

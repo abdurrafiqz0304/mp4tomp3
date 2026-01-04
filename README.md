@@ -15,4 +15,4 @@ git clone https://github.com/abdurrafiqz0304/mp4tomp3.git && cd mp4tomp3 && inst
 Customly put link in the txt
 
 ### Note
-Note: Ensure ffmpeg.exe is present in the folder. Python must be installed on your system.
+Note: Ensure ffmpeg.exe is present in the folder. Python must be installed on your system!
