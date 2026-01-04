@@ -5,7 +5,10 @@ This tool comes with an auto-installer that sets up Python dependencies and down
 
 1. **Clone the repository**:
 
+```bash
 git clone https://github.com/abdurrafiqz0304/mp4tomp3.git && cd mp4tomp3 && install.bat
+
+```
 
 ### How to launch
 1. Open CMD
