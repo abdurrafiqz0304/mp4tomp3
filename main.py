@@ -6,15 +6,14 @@ import shutil
 import sys
 import re
 import webbrowser
-import time
 
-# --- LIBRARY ROBOT ---
+# --- LIBRARY CLIPBOARD ---
+# Kita cuma guna pyperclip untuk tolong copy text. Takde robot tekan-tekan dah.
 try:
-    import pyautogui
     import pyperclip
-    ROBOT_AVAILABLE = True
+    CLIPBOARD_AVAILABLE = True
 except ImportError:
-    ROBOT_AVAILABLE = False
+    CLIPBOARD_AVAILABLE = False
 
 # --- CONFIGURATION ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -41,14 +40,9 @@ def clean_filename_for_list(filename):
     name = name.replace("_", " ").replace("-", " ")
     return " ".join(name.split())
 
-# --- CUSTOM COMBO BOT ---
-def run_custom_bot():
-    if not ROBOT_AVAILABLE:
-        print("\n❌ Error: Robot libraries missing. Go to Update Center.")
-        input("[ENTER]...")
-        return
-
-    print("\n[CUSTOM MACRO BOT V3.7]")
+# --- SEMI-AUTO EXPORT ---
+def export_and_open_web():
+    print("\n[GENERATE PLAYLIST & OPEN WEB]")
     target_folder = folder_menu()
     if not target_folder: return
 
@@ -57,118 +51,45 @@ def run_custom_bot():
         print("⚠️ No files found.")
         return
 
-    # --- INPUT NAMA PLAYLIST DULU ---
-    print("\n" + "-"*30)
-    user_playlist_name = input("✍️  Enter Desired Playlist Name: ").strip()
-    if not user_playlist_name: user_playlist_name = "My MP3 Turbo Playlist"
-    print("-"*30)
-
-    # 1. Generate TXT File
-    print(f"\n[1/4] Generating playlist file...")
-    txt_filename = "auto_upload_playlist.txt"
-    txt_path = os.path.join(BASE_DIR, txt_filename)
+    print(f"\n[1/3] Processing {len(files)} songs...")
     
+    # 1. Bersihkan nama & compile text
+    full_text = ""
+    for file in files:
+        full_text += clean_filename_for_list(file) + "\n"
+
+    # 2. Cuba Copy ke Clipboard
+    if CLIPBOARD_AVAILABLE:
+        try:
+            pyperclip.copy(full_text)
+            print("✅ SUCCEESS: All songs COPIED to your Clipboard!")
+            print("   (You can just press Ctrl+V to paste later)")
+        except:
+            print("⚠️ Clipboard error. Don't worry, use the text file.")
+    else:
+        print("⚠️ 'pyperclip' not installed. I will save a text file instead.")
+
+    # 3. Simpan Backup Text File (Manalah tahu lupa paste)
+    txt_path = os.path.join(BASE_DIR, "playlist_backup.txt")
     with open(txt_path, 'w', encoding='utf-8') as f:
-        for file in files:
-            f.write(clean_filename_for_list(file) + "\n")
-    
-    print(f"✅ File created at: {txt_path}")
+        f.write(full_text)
+    print(f"✅ Backup file saved: {txt_path}")
 
-    # 2. Buka Website
-    print("[2/4] Opening TuneMyMusic...")
-    webbrowser.open("https://www.tunemymusic.com/")
-    
+    # 4. Buka Website
+    print("[2/3] Opening TuneMyMusic...")
+    # Link ni terus ke page "From Text" supaya jimat klik
+    webbrowser.open("https://www.tunemymusic.com/transfer/file")
+
     print("\n" + "="*50)
-    print("   ⚠️  GET READY IN 5 SECONDS  ⚠️")
+    print("   🚀  INSTRUCTIONS  🚀")
     print("="*50)
-    print("1. Click ONCE anywhere on the website background.")
-    print("2. LET GO of the mouse.")
-    print("3. I will run the COMBO + TYPE NAME.")
+    print("1. Website is opening...")
+    print("2. Click inside the big text box.")
+    print("3. Press CTRL + V (Paste).")
+    print("4. Click 'Convert List' -> Choose Spotify.")
     print("="*50)
-
-    for i in range(5, 0, -1):
-        print(f"Starting in: {i}...", end="\r")
-        time.sleep(1)
     
-    print("\n🚀 ACTION: Running Combo & Injection...")
-
-    # --- THE COMBO SEQUENCE ---
-    
-    # 1. TAB 3 (Masuk menu)
-    print("👉 Tab x 3")
-    for _ in range(3): 
-        pyautogui.press('tab')
-        time.sleep(0.1)
-
-    # 2. TAB 23 (Navigation to Upload Button)
-    print("👉 Tab x 23")
-    for _ in range(23): 
-        pyautogui.press('tab')
-        time.sleep(0.05)
-
-    # 3. ENTER (Open File Dialog) & UPLOAD
-    print("👉 Uploading TXT File...")
-    pyautogui.press('enter') 
-    time.sleep(2)
-    
-    pyautogui.write(txt_path)
-    time.sleep(1)
-    pyautogui.press('enter')
-    
-    print("⏳ Waiting 4 seconds for file processing...")
-    time.sleep(4)
-
-    # --- INI PART BARU (ROBOT TANGAN MENAIP) ---
-    print(f"✍️  INJECTING NAME: '{user_playlist_name}'")
-    
-    # Optional: Tekan Tab sekali kalau cursor tak automatik masuk kotak nama
-    # pyautogui.press('tab') 
-    
-    # Kita clear dulu nama lama (kalau ada)
-    pyautogui.hotkey('ctrl', 'a') # Select All
-    pyautogui.press('backspace')  # Delete
-    
-    # Taip nama baru
-    pyautogui.write(user_playlist_name, interval=0.1)
-    time.sleep(1)
-    # -------------------------------------------
-
-    # 4. Sambung TAB 6
-    print("👉 Tab x 6")
-    for _ in range(6):
-        pyautogui.press('tab')
-        time.sleep(0.1)
-
-    # 5. TAB 3
-    print("👉 Tab x 3")
-    for _ in range(3):
-        pyautogui.press('tab')
-        time.sleep(0.1)
-
-    # 6. TAB 3
-    print("👉 Tab x 3")
-    for _ in range(3):
-        pyautogui.press('tab')
-        time.sleep(0.1)
-
-    # 7. TAB 2
-    print("👉 Tab x 2")
-    for _ in range(2):
-        pyautogui.press('tab')
-        time.sleep(0.1)
-
-    # 8. TAB 2
-    print("👉 Tab x 2")
-    for _ in range(2):
-        pyautogui.press('tab')
-        time.sleep(0.1)
-
-    # FINAL EXECUTE
-    print("🔥 FINISH HIM! (Enter)")
-    pyautogui.press('enter')
-
-    print("\n✅ COMBO FINISHED!")
-    input("[ENTER] to return...")
+    input("[ENTER] to return to menu...")
 
 # --- UPDATE MENU ---
 def update_menu():
@@ -178,7 +99,7 @@ def update_menu():
         print("="*40)
         print("1. Update PROGRAM")
         print("2. Update LIBRARY (yt-dlp)")
-        print("3. Install ROBOT (pyautogui)")
+        print("3. Install COPY TOOL (pyperclip)")
         print("0. < BACK")
         
         choice = input("\nOption: ").strip()
@@ -200,7 +121,8 @@ def update_menu():
             input("Done. [ENTER]")
             
         if choice == '3':
-            subprocess.check_call([sys.executable, "-m", "pip", "install", "pyautogui", "pyperclip"])
+            # Kita install pyperclip je, tak payah pyautogui berat2
+            subprocess.check_call([sys.executable, "-m", "pip", "install", "pyperclip"])
             input("Done. [ENTER]")
 
 # --- FILE MANAGER ---
@@ -273,13 +195,13 @@ def folder_menu():
 def main_menu():
     while True:
         print("\n" + "="*40)
-        print("   MP3 TURBO V3.7 (NAME INJECTION)   ")
+        print("   MP3 TURBO V5.0 by Abdurrafiqz   ")
         print("="*40)
         print("1. Single Video")
         print("2. Playlist")
         print("3. Bulk (.txt)")
         print("4. File Manager")
-        print("5. RUN COMBO BOT (Name Injection)")
+        print("5. EXPORT TO SPOTIFY (Copy-Paste Method)")
         print("6. Update Center")
         print("7. Exit")
         
@@ -288,7 +210,7 @@ def main_menu():
         if mode == '6': update_menu(); continue
         
         if mode == '5': 
-            run_custom_bot()
+            export_and_open_web()
             continue
 
         if mode == '4': 
