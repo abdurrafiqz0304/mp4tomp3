@@ -10,7 +10,6 @@ def open_folder_window(path):
         if platform.system() == "Windows":
             os.startfile(path)
         else:
-            # Fallback for macOS/Linux
             opener = "open" if platform.system() == "Darwin" else "xdg-open"
             subprocess.call([opener, path])
         print(f"📂 Folder '{path}' opened successfully.")
@@ -20,7 +19,6 @@ def open_folder_window(path):
 def delete_files_bulk(path):
     """Menu to delete single or multiple files."""
     while True:
-        # List all MP3 files
         files = [f for f in os.listdir(path) if f.endswith('.mp3')]
         
         if not files:
@@ -36,16 +34,12 @@ def delete_files_bulk(path):
         print("      Or multiple numbers separated by commas (e.g., 1, 3, 5)")
         choice = input("Select file number(s): ").strip()
         
-        if choice == '0':
-            return
+        if choice == '0': return
         
         try:
-            # Parse input
             indices = [int(x.strip()) for x in choice.split(',') if x.strip().isdigit()]
-            
             files_to_delete = []
             
-            # Validate indices
             for n in indices:
                 idx = n - 1
                 if 0 <= idx < len(files):
@@ -55,10 +49,8 @@ def delete_files_bulk(path):
                 print("❌ No valid file numbers selected.")
                 continue
 
-            # Confirmation
             print(f"\nYou are about to DELETE {len(files_to_delete)} file(s):")
-            for f in files_to_delete:
-                print(f"- {f}")
+            for f in files_to_delete: print(f"- {f}")
             
             confirm = input("\n⚠️ Are you sure? (y/n): ").lower()
             if confirm == 'y':
@@ -74,14 +66,12 @@ def delete_files_bulk(path):
 
 def delete_entire_folder(path):
     """Deletes the entire folder and its contents."""
-    # Prevent deletion of the default folder
     if os.path.basename(path) == 'downloads':
         print("\n❌ The default 'downloads' folder cannot be deleted for safety.")
         return False
 
     print(f"\n⚠️ DANGER ZONE ⚠️")
     print(f"You are about to PERMANENTLY DELETE: {path}")
-    print("All files inside will be lost.")
     
     confirm = input("Type 'DELETE' to confirm: ").strip()
     
@@ -89,23 +79,32 @@ def delete_entire_folder(path):
         try:
             shutil.rmtree(path)
             print(f"✅ Folder '{path}' has been deleted successfully.")
-            return True # Signal that folder is gone
+            return True 
         except Exception as e:
             print(f"❌ Failed to delete folder: {e}")
             return False
     else:
-        print("❌ Cancelled. Input did not match 'DELETE'.")
+        print("❌ Cancelled.")
         return False
 
 def download_audio(sources, quality_choice, download_mode, target_folder):
-    # Create folder if it doesn't exist
     if not os.path.exists(target_folder):
         os.makedirs(target_folder)
         print(f"📁 Created new directory: {target_folder}")
 
-    # Configuration
     kbps = '320' if quality_choice == '1' else '128'
     is_noplaylist = True if download_mode == '1' else False
+
+    # --- FIX START: AUTO DETECT FFMPEG PATH ---
+    # Cari lokasi script ini berada, dan cari ffmpeg.exe di sebelahnya
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    ffmpeg_path = os.path.join(script_dir, 'ffmpeg.exe')
+    
+    if not os.path.exists(ffmpeg_path):
+        print(f"\n❌ ERROR: ffmpeg.exe not found at: {ffmpeg_path}")
+        print("Please run install.bat again.")
+        return
+    # --- FIX END ---
 
     def progress_hook(d):
         if d['status'] == 'downloading':
@@ -123,7 +122,7 @@ def download_audio(sources, quality_choice, download_mode, target_folder):
             'preferredcodec': 'mp3',
             'preferredquality': kbps,
         }],
-        'ffmpeg_location': './ffmpeg.exe', 
+        'ffmpeg_location': ffmpeg_path, # Guna path yang dah dibetulkan
         'progress_hooks': [progress_hook],
         'quiet': True,
         'no_warnings': True,
@@ -157,7 +156,6 @@ def folder_menu():
             name = input("Enter new folder name: ").strip()
             return name if name else 'downloads'
         elif choice == '3':
-            # List valid directories only
             all_items = os.listdir('.')
             folders = [f for f in all_items if os.path.isdir(f) and not f.startswith('.')]
             if not folders:
@@ -172,16 +170,10 @@ def folder_menu():
             try:
                 inp = input(f"Select number (0-{len(folders)}): ").strip()
                 if inp == '0': continue
-                
                 idx = int(inp) - 1
-                if 0 <= idx < len(folders):
-                    return folders[idx]
-                else:
-                    print("❌ Invalid selection.")
-            except ValueError: 
-                print("❌ Invalid input.")
-        else:
-            print("❌ Invalid option.")
+                if 0 <= idx < len(folders): return folders[idx]
+            except: pass
+        else: print("❌ Invalid option.")
 
 def file_manager_menu():
     print("\n[SELECT FOLDER TO MANAGE]")
@@ -205,20 +197,16 @@ def file_manager_menu():
         
         choice = input("Select option (0-3): ").strip()
         
-        if choice == '0':
-            break
-        elif choice == '1':
-            open_folder_window(target_folder)
-        elif choice == '2':
-            delete_files_bulk(target_folder)
-        elif choice == '3':
-            success = delete_entire_folder(target_folder)
-            if success: break 
+        if choice == '0': break
+        elif choice == '1': open_folder_window(target_folder)
+        elif choice == '2': delete_files_bulk(target_folder)
+        elif choice == '3': 
+            if delete_entire_folder(target_folder): break 
 
 def main_menu():
     while True:
         print("\n" + "="*50)
-        print("   MP3 TURBO DOWNLOADER V1.7 (GITHUB EDITION)   ")
+        print("   MP3 TURBO DOWNLOADER V1.8 (BUG FIXED)   ")
         print("="*50)
         print("1. Download Single Video")
         print("2. Download Playlist / Album")
@@ -228,11 +216,8 @@ def main_menu():
         
         mode = input("\nSelect Menu (1-5): ").strip()
 
-        if mode == '5':
-            print("Exiting application. Goodbye!")
-            break
-
-        if mode == '4':
+        if mode == '5': break
+        if mode == '4': 
             file_manager_menu()
             continue
 
@@ -240,11 +225,9 @@ def main_menu():
             print("❌ Invalid selection.")
             continue
 
-        # Step 1: Choose Folder
         folder_target = folder_menu()
         if folder_target is None: continue
 
-        # Step 2: Choose Quality
         print("\n--- AUDIO QUALITY ---")
         print("1. High Quality (320kbps)")
         print("2. Standard/Fast (128kbps)")
@@ -252,32 +235,18 @@ def main_menu():
         q = input("Select option: ").strip()
         if q == '0': continue
 
-        # Step 3: Input Source
         if mode == '3':
-            print("\n(Type '0' to cancel)")
-            file_name = input("Enter .txt filename: ").strip()
-            if file_name == '0': continue
-            
+            file_name = input("\nEnter .txt filename: ").strip()
             if os.path.exists(file_name):
-                with open(file_name, 'r') as f:
-                    links = f.readlines()
+                with open(file_name, 'r') as f: links = f.readlines()
                 download_audio(links, q, '1', folder_target)
-                
-                open_it = input("\nJob done! Open folder now? (y/n): ").lower()
-                if open_it == 'y': open_folder_window(folder_target)
-            else:
-                print("❌ File not found.")
+                if input("\nOpen folder? (y/n): ").lower() == 'y': open_folder_window(folder_target)
+            else: print("❌ File not found.")
         else:
-            print("\n(Type '0' to cancel)")
-            link = input("Paste YouTube Link: ").strip()
-            if link == '0': continue
-            
-            download_audio([link], q, mode, folder_target)
-            
-            open_it = input("\nJob done! Open folder now? (y/n): ").lower()
-            if open_it == 'y': open_folder_window(folder_target)
+            link = input("\nPaste YouTube Link: ").strip()
+            if link != '0':
+                download_audio([link], q, mode, folder_target)
+                if input("\nOpen folder? (y/n): ").lower() == 'y': open_folder_window(folder_target)
 
 if __name__ == "__main__":
     main_menu()
-
-    # Done
