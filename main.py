@@ -3,157 +3,241 @@ import os
 import platform
 import subprocess
 import shutil
-import sys
 
-# --- FUNGSI BANTUAN ---
+# --- HELPER FUNCTIONS ---
 def open_folder_window(path):
+    """Opens the target folder in the system's file explorer."""
     try:
-        if platform.system() == "Windows": os.startfile(path)
-        else: subprocess.call(["open" if platform.system() == "Darwin" else "xdg-open", path])
-        print(f"📂 Folder '{path}' dibuka.")
-    except Exception as e: print(f"❌ Error buka folder: {e}")
+        if platform.system() == "Windows":
+            os.startfile(path)
+        else:
+            opener = "open" if platform.system() == "Darwin" else "xdg-open"
+            subprocess.call([opener, path])
+        print(f"📂 Folder '{path}' opened successfully.")
+    except Exception as e:
+        print(f"❌ Failed to open folder: {e}")
 
 def get_ffmpeg_path():
+    """Locates ffmpeg.exe relative to the script location."""
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    return os.path.join(script_dir, 'ffmpeg.exe')
+    ffmpeg_path = os.path.join(script_dir, 'ffmpeg.exe')
+    return ffmpeg_path
 
-# --- FUNGSI UPDATE ---
-def update_engine():
-    """Update library yt-dlp (Untuk fix speed/error)"""
-    print("\n[SYSTEM] Mengemaskini enjin yt-dlp...")
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", "yt-dlp"])
-        print("✅ Enjin berjaya dikemaskini!")
-        input("[Tekan ENTER]")
-    except Exception as e:
-        print(f"❌ Gagal: {e}")
-        input("[Tekan ENTER]")
+def delete_files_bulk(path):
+    """Menu to delete single or multiple files."""
+    while True:
+        files = [f for f in os.listdir(path) if f.endswith('.mp3')]
+        if not files:
+            print(f"\n⚠️ No MP3 files found in '{path}'.")
+            return
 
-def update_app_code():
-    """Update kod main.py dari GitHub (git pull)"""
-    print("\n[APP UPDATE] Memeriksa versi terbaru dari GitHub...")
+        print(f"\n--- DELETE FILES (Folder: {path}) ---")
+        for idx, f in enumerate(files, 1):
+            print(f"{idx}. {f}")
+        print("0. < BACK")
+
+        choice = input("\nSelect file number(s) to delete (e.g. 1,3,5): ").strip()
+        if choice == '0': return
+
+        try:
+            indices = [int(x.strip()) for x in choice.split(',') if x.strip().isdigit()]
+            files_to_delete = []
+            for n in indices:
+                idx = n - 1
+                if 0 <= idx < len(files):
+                    files_to_delete.append(files[idx])
+
+            if not files_to_delete:
+                print("❌ No valid files selected.")
+                continue
+
+            print(f"\nYou are about to DELETE {len(files_to_delete)} file(s).")
+            confirm = input("⚠️ Are you sure? (y/n): ").lower()
+            if confirm == 'y':
+                for f in files_to_delete:
+                    os.remove(os.path.join(path, f))
+                    print(f"✅ Deleted: {f}")
+            else:
+                print("❌ Cancelled.")
+        except ValueError:
+            print("❌ Invalid input.")
+
+def delete_entire_folder(path):
+    """Deletes the entire folder."""
+    if os.path.basename(path) == 'downloads':
+        print("\n❌ The default 'downloads' folder cannot be deleted.")
+        return False
     
-    # 1. Check kalau folder ni valid Git Repo
-    if not os.path.exists(".git"):
-        print("❌ ERROR: Folder ini bukan 'Git Repository'.")
-        print("   Anda mungkin download guna ZIP.")
-        print("   Sila delete folder ini dan install semula guna command 'git clone'.")
-        input("[Tekan ENTER]")
-        return
+    print(f"\n⚠️ DANGER: You are about to DELETE '{path}' and all its contents!")
+    confirm = input("Type 'DELETE' to confirm: ").strip()
+    if confirm == 'DELETE':
+        shutil.rmtree(path)
+        print(f"✅ Folder '{path}' deleted.")
+        return True
+    return False
 
-    # 2. Cuba tarik update
-    try:
-        # Jalankan git pull
-        process = subprocess.run(["git", "pull"], capture_output=True, text=True)
-        
-        if "Already up to date" in process.stdout:
-            print("✅ Aplikasi anda sudah TERKINI (V2.1).")
-        else:
-            print(process.stdout)
-            print("✅ UPDATE BERJAYA! Kod baru telah dimuat turun.")
-            print("⚠️ Sila TUTUP window ini dan BUKA SEMULA 'mp3' untuk apply changes.")
-            sys.exit() # Matikan program supaya user restart
-            
-    except Exception as e:
-        print(f"❌ Gagal update: {e}")
-        print("Pastikan anda ada internet dan Git installed.")
-    
-    input("[Tekan ENTER]")
-
-# --- DOWNLOADER ---
+# --- CORE DOWNLOADER ---
 def download_audio(sources, quality_choice, download_mode, target_folder):
-    if not os.path.exists(target_folder): os.makedirs(target_folder)
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
+
+    kbps = '320' if quality_choice == '1' else '128'
+    is_noplaylist = True if download_mode == '1' else False
     
     ffmpeg_loc = get_ffmpeg_path()
     if not os.path.exists(ffmpeg_loc):
-        print(f"\n❌ ERROR: FFmpeg tak jumpa. Run install.bat balik.")
+        print(f"\n❌ CRITICAL ERROR: FFmpeg not found at {ffmpeg_loc}")
+        print("   Please run 'install.bat' again to fix this.")
         return
 
-    kbps = '320' if quality_choice == '1' else '128'
+    def progress_hook(d):
+        if d['status'] == 'downloading':
+            p = d.get('_percent_str', '0%')
+            print(f"\r[DOWNLOADING] {p}", end='', flush=True)
+        elif d['status'] == 'finished':
+            print(f"\n[DONE] Processing Audio...")
+
     ydl_opts = {
         'format': 'bestaudio/best',
-        'postprocessors': [{'key': 'FFmpegExtractAudio','preferredcodec': 'mp3','preferredquality': kbps}],
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': kbps,
+        }],
         'ffmpeg_location': ffmpeg_loc,
+        'progress_hooks': [progress_hook],
         'quiet': False,
-        'no_warnings': True,
-        'noplaylist': True if download_mode == '1' else False,
+        'no_warnings': False,
+        'noplaylist': is_noplaylist,
         'outtmpl': f'{target_folder}/%(title)s.%(ext)s',
-        'noprogress': False,
+        
+        # Stability Settings (V1.9)
+        'force_ipv4': True,
+        'socket_timeout': 15,
+        'nocheckcertificate': True,
     }
 
-    print("\n" + "="*40)
-    print(f"   MEMPROSES... ({len(sources)} Fail)   ")
-    print("="*40)
+    print("\n[INFO] connecting to YouTube...")
     
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         for url in sources:
             try:
-                print(f"\nTarget: {url}")
                 ydl.download([url.strip()])
-            except Exception as e: print(f"\n❌ GAGAL: {e}")
+            except Exception as e:
+                print(f"\n❌ FAILED: {e}")
 
 # --- MENUS ---
 def folder_menu():
     while True:
-        print("\n--- PILIH FOLDER ---")
-        print("1. 'downloads' (Default)")
-        print("2. Folder Baru")
-        print("3. Folder Sedia Ada")
-        print("0. < KEMBALI")
-        c = input("Pilihan: ").strip()
-        if c == '0': return None
-        if c == '1': return 'downloads'
-        if c == '2': return input("Nama folder: ").strip() or 'downloads'
-        if c == '3':
-            fs = [f for f in os.listdir('.') if os.path.isdir(f) and not f.startswith('.')]
-            for i,f in enumerate(fs,1): print(f"{i}. {f}")
-            try: return fs[int(input("Pilih: "))-1]
+        print("\n--- FOLDER SELECTION ---")
+        print("1. Use default 'downloads' folder")
+        print("2. Create a NEW folder")
+        print("3. Select EXISTING folder")
+        print("0. < BACK")
+        
+        choice = input("Option: ").strip()
+        if choice == '0': return None
+        if choice == '1': return 'downloads'
+        if choice == '2':
+            name = input("Enter new folder name: ").strip()
+            return name if name else 'downloads'
+        if choice == '3':
+            folders = [f for f in os.listdir('.') if os.path.isdir(f) and not f.startswith('.')]
+            if not folders:
+                print("⚠️ No folders found.")
+                continue
+            for idx, f in enumerate(folders, 1): print(f"{idx}. {f}")
+            try:
+                idx = int(input("Select number: ")) - 1
+                if 0 <= idx < len(folders): return folders[idx]
             except: pass
+        else: print("❌ Invalid option.")
+
+def file_manager_menu():
+    folder = folder_menu()
+    if not folder: return
+    while os.path.exists(folder):
+        print(f"\n--- MANAGING: {folder} ---")
+        print("1. Open Folder")
+        print("2. Delete Files")
+        print("3. Delete Entire Folder")
+        print("0. < BACK")
+        c = input("Option: ").strip()
+        if c == '0': break
+        if c == '1': open_folder_window(folder)
+        if c == '2': delete_files_bulk(folder)
+        if c == '3': 
+            if delete_entire_folder(folder): break
 
 def main_menu():
     while True:
         print("\n" + "="*50)
-        print("   MP3 TURBO V2.1 (SELF-UPDATER)   ")
+        print("   MP3 TURBO V2.0 (CONTINUOUS MODE)   ")
         print("="*50)
-        print("1. Download Single Link")
-        print("2. Download Playlist")
-        print("3. Bulk (.txt)")
+        print("1. Download Single Video")
+        print("2. Download Playlist / Album")
+        print("3. Bulk Download (from .txt)")
         print("4. File Manager")
-        print("5. UPDATE ENGINE (Fix Slow Speed)")
-        print("6. UPDATE APP CODE (Dapatkan Feature Baru)")
-        print("7. Keluar")
+        print("5. Exit")
         
-        mode = input("\nPilih (1-7): ").strip()
+        mode = input("\nSelect Menu (1-5): ").strip()
 
-        if mode == '7': break
-        if mode == '5': update_engine(); continue
-        if mode == '6': update_app_code(); continue # MENU BARU
-        if mode == '4': 
-            # (Ringkasan File Manager untuk jimat space)
-            f = folder_menu()
-            if f: open_folder_window(f)
+        if mode == '5':
+            print("Goodbye!")
+            break
+            
+        if mode == '4':
+            file_manager_menu()
             continue
-        
-        if mode in ['1','2','3']:
+
+        if mode in ['1', '2', '3']:
+            # Step 1: Set Preferences ONCE
             folder = folder_menu()
             if not folder: continue
-            
-            print("\nKualiti:\n1. 320kbps (HQ)\n2. 128kbps (Std)\n0. Back")
-            q = input("Pilih: ").strip()
-            if q == '0': continue
-            
-            links = []
-            if mode == '3':
-                fn = input("Nama file .txt: ")
-                if os.path.exists(fn): 
-                    with open(fn) as f: links = f.readlines()
-            else:
-                l = input("Link YouTube: ")
-                if l != '0': links = [l]
-            
-            if links:
-                download_audio(links, q, mode, folder)
-                if input("\nBuka folder? (y/n): ").lower() == 'y': open_folder_window(folder)
+
+            print("\n--- AUDIO QUALITY ---")
+            print("1. High Quality (320kbps)")
+            print("2. Standard (128kbps)")
+            q = input("Select Option: ").strip()
+            if q not in ['1', '2']: continue
+
+            # Step 2: Continuous Loop (The New Feature)
+            while True:
+                if mode == '3':
+                    # Bulk Mode Logic
+                    txt_file = input("\nEnter .txt filename (or '0' to cancel): ").strip()
+                    if txt_file == '0': break
+                    
+                    if os.path.exists(txt_file):
+                        with open(txt_file, 'r') as f: links = f.readlines()
+                        download_audio(links, q, '1', folder)
+                    else:
+                        print("❌ File not found.")
+                else:
+                    # Single/Playlist Mode Logic
+                    print(f"\n[Current Settings: Folder='{folder}' | Mode={'Single' if mode=='1' else 'Playlist'}]")
+                    link = input("Paste YouTube Link (or '0' to stop): ").strip()
+                    
+                    if link == '0': break
+                    
+                    download_audio([link], q, mode, folder)
+
+                # --- THE "CONTINUE?" QUESTION ---
+                print("\n" + "-"*40)
+                print("Job Done! What next?")
+                print("Y = Download another video (Same Settings)")
+                print("N = Back to Main Menu")
+                print("O = Open Folder")
+                
+                next_action = input("Choice (y/n/o): ").strip().lower()
+
+                if next_action == 'o':
+                    open_folder_window(folder)
+                    # After opening, ask again if they want to continue
+                    next_action = input("Continue downloading? (y/n): ").strip().lower()
+
+                if next_action != 'y':
+                    break # Break inner loop, go back to Main Menu
 
 if __name__ == "__main__":
     main_menu()
