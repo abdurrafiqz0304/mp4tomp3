@@ -4,9 +4,8 @@
 This tool comes with an auto-installer that sets up Python dependencies and downloads FFmpeg for you.
 
 1. **Clone the repository**:
-   ```bash
-   git clone [https://github.com/YOUR_USERNAME/mp3-turbo-downloader.git](https://github.com/YOUR_USERNAME/mp3-turbo-downloader.git)
-   cd mp3-turbo-downloader
+
+git clone https://github.com/abdurrafiqz0304/mp4tomp3.git && cd mp4tomp3 && install.bat
 
 ### How to launch
 1. Open CMD
