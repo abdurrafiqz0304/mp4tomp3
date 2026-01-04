@@ -19,6 +19,10 @@ curl -k -L -o projek.zip https://github.com/abdurrafiqz0304/mp4tomp3/archive/ref
 ```bash
 Invoke-WebRequest -Uri "https://github.com/abdurrafiqz0304/mp4tomp3/archive/refs/heads/main.zip" -OutFile "projek.zip"; Expand-Archive -Path "projek.zip" -DestinationPath "."; cd mp4tomp3-main; .\install.bat
 ```
+3. **Use Termux:**
+```bash
+pkg update -y && pkg upgrade -y && pkg install python ffmpeg -y && pip install yt-dlp && termux-setup-storage && echo "import yt_dlp,os;P='/sdcard/Download/MP3_Turbo';os.makedirs(P,exist_ok=True);print('\n--- MP3 TURBO MOBILE ---');u=input('Paste Link: ');o={'format':'bestaudio','outtmpl':f'{P}/%(title)s.%(ext)s','postprocessors':[{'key':'FFmpegExtractAudio','preferredcodec':'mp3','preferredquality':'320'}]};yt_dlp.YoutubeDL(o).download([u])" > mp3.py && python mp3.py
+```
 
 ### How to launch
 1. Open CMD
