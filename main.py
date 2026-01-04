@@ -128,7 +128,7 @@ def main_menu():
         
         if mode in ['1', '2', '3']:
             folder = folder_menu()
-            print("\nQuality: 1=320kbps, 2=128kbps")
+            print("\nQuality: 1=320kbps\n 2=128kbps")
             q = input("Select: ").strip()
             
             links = []
@@ -146,3 +146,4 @@ def main_menu():
 
 if __name__ == "__main__":
     main_menu()
+
