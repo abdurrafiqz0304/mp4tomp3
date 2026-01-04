@@ -15,10 +15,10 @@ if %errorlevel% neq 0 (
 )
 echo [OK] Python is found.
 
-:: 2. Install Python Libraries
+:: 2. Install Python Libraries (FIXED: Guna python -m pip)
 echo.
 echo [2/4] Installing required Python libraries...
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to install libraries. Check internet connection.
     pause
@@ -26,7 +26,7 @@ if %errorlevel% neq 0 (
 )
 echo [OK] Libraries installed.
 
-:: 3. Auto-Download FFmpeg (The Magic Part)
+:: 3. Auto-Download FFmpeg
 echo.
 echo [3/4] Checking for FFmpeg...
 if exist "ffmpeg.exe" (
@@ -79,5 +79,3 @@ echo You can now open any Command Prompt and type:
 echo    mp3
 echo.
 pause
-
-:: Done
