@@ -1,8 +1,7 @@
 ## 🚀 Quick Start (No Manual Setup)
+## 📦 Installation (Automatic)
 
-You can run this tool directly from your Command Prompt (CMD) just by typing `mp3`, goodluck!.
-
-### Installation Steps
+This tool comes with an auto-installer that sets up Python dependencies and downloads FFmpeg for you.
 
 1. **Clone the repository**:
    ```bash
